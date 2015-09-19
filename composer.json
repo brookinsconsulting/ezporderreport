@@ -1,0 +1,24 @@
+{
+    "name": "brookinsconsulting/ezporderreport",
+    "description": "eZ Publish Legacy extension which provides a simple ajax based alternative to the default shop/orderlist module view. Great for admin reports!",
+    "type": "ezpublish-legacy-extension",
+    "keywords": [ "eZ Publish", "shop", "order", "orders", "report" ],
+    "homepage": "https://bitbucket.org/brookinsconsulting/ezporderreport",
+    "license": "GPL-2.0+",
+    "authors": [
+        {
+            "name" : "Brookins Consulting",
+            "homepage": "http://brookinsconsulting.com",
+            "email": "info@brookinsconsulting.com",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.0.0",
+        "ezsystems/ezpublish-legacy-installer": "*"
+    },
+    "extra": {
+        "ezpublish-legacy-extension-name": "ezporderreport"
+    }
+}
