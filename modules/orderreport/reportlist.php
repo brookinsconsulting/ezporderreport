@@ -48,7 +48,7 @@ else
             $sortField = 'id';
             break;
         case 1:
-            $sortField = 'customer';
+            $sortField = 'user_name';
             break;
         case 2:
             $sortField = 'adgency';

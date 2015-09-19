@@ -29,7 +29,7 @@
         <thead>
             <tr>
                 <th class="dataTablesSortable">{'ID'|i18n('design/admin/orderreport/orderreport')}</th>
-                <th>Customer</th>
+                <th class="dataTablesSortable">Customer</th>
                 <th>Agency</th>
                 <th>{'Total (ex. VAT)'|i18n('design/admin/orderreport/orderreport')}</th>
                 <th>{'Total (inc. VAT)'|i18n('design/admin/orderreport/orderreport')}</th>
