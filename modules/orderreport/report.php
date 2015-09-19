@@ -64,7 +64,7 @@ if( isset( $_GET['sSearch'] ) )
     $requestssearch = $_GET['sSearch'];
 }
 
-$tpl->setVariable( 'requestsSearch', $requestssearch );
+$tpl->setVariable( 'requestssearch', $requestssearch );
 
 /**
  * Default template include
