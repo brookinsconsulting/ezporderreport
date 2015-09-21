@@ -10,13 +10,16 @@
  */
 
 // Define module name
-$Module = array('name' => 'Order Report');
+$Module = array( 'name' => 'Order Report',
+                 'default_view' => 'report',
+          );
 
 // Define module view and parameters
 $ViewList = array();
 
 // Define 'report' module view parameters
-$ViewList['report'] = array( 'script' => 'report.php',
+$ViewList['report'] = array( 'name' => 'Order Report',
+                             'script' => 'report.php',
                              'functions' => array( 'report' ),
                              'unordered_params' => array( 'offset' => 'Offset', 'limit' => 'Limit' ),
                              'default_navigation_part' => 'ezporderreportnavigationpart',
@@ -25,11 +28,11 @@ $ViewList['report'] = array( 'script' => 'report.php',
 
 // Define 'reportlist' module view parameters
 $ViewList['reportlist'] = array( 'script' => 'reportlist.php',
-                             'functions' => array( 'reportlist' ),
-                             'unordered_params' => array( 'offset' => 'Offset', 'limit' => 'Limit' ),
-                             'default_navigation_part' => 'ezporderreportnavigationpart',
-                             'post_actions' => array(),
-                             'params' => array() );
+                                 'functions' => array( 'reportlist' ),
+                                 'unordered_params' => array( 'offset' => 'Offset', 'limit' => 'Limit' ),
+                                 'default_navigation_part' => 'ezporderreportnavigationpart',
+                                 'post_actions' => array(),
+                                 'params' => array() );
 
 // Define function parameters
 $FunctionList = array();

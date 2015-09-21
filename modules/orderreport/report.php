@@ -10,12 +10,6 @@
  */
 
 /**
- * Disable memory and time limit
- */
-// set_time_limit( 0 );
-// ini_set( "memory_limit", -1 );
-
-/**
  * Default module parameters
  */
 $module = $Params["Module"];
@@ -25,10 +19,7 @@ $module = $Params["Module"];
 */
 
 /** Parse HTTP POST variables **/
-// $http = eZHTTPTool::instance();
-
-/** Access system variables **/
-// $sys = eZSys::instance();
+$http = eZHTTPTool::instance();
 
 /** Init template behaviors **/
 $tpl = eZTemplate::factory();
@@ -39,32 +30,33 @@ $tpl = eZTemplate::factory();
 
 /** Report file variables **/
 $ordersCount = eZOrder::activeCount();
-$tpl->setVariable( 'order_count', $ordersCount );
 
 $requestlimit = 15;
 $requestoffset = 0;
 $requestssearch = '';
 
-if( isset( $_GET['limit'] ) )
+if( $http->getVariable( 'limit' ) )
 {
-    $requestlimit = $_GET['limit'];
+    $requestlimit = $http->getVariable( 'limit' );
 }
 
 $tpl->setVariable( 'requestlimit', $requestlimit );
 
-if( isset( $_GET['offset'] ) )
+if( $http->getVariable( 'offset' ) )
 {
-    $requestoffset = $_GET['offset'];
+    $requestoffset = $http->getVariable( 'offset' );
 }
 
 $tpl->setVariable( 'requestoffset', $requestoffset );
 
-if( isset( $_GET['sSearch'] ) )
+if( $http->getVariable( 'sSearch' ) )
 {
-    $requestssearch = $_GET['sSearch'];
+    $requestssearch = $http->getVariable( 'sSearch' );
 }
 
 $tpl->setVariable( 'requestssearch', $requestssearch );
+
+$tpl->setVariable( 'order_count', $ordersCount );
 
 /**
  * Default template include

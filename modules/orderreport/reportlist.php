@@ -10,23 +10,35 @@
  */
 
 /**
- * Disable memory and time limit
- */
-// set_time_limit( 0 );
-// ini_set( "memory_limit", -1 );
-
-/**
  * Default module parameters
  */
 $module = $Params["Module"];
 
+/**
+* Default class instances
+*/
 
-$offset = (isset($_REQUEST['iDisplayStart'])) ? $_REQUEST['iDisplayStart'] : 0;
-$limit = (isset($_REQUEST['iDisplayLength'])) ? $_REQUEST['iDisplayLength'] : 15;
-$sSearch = (isset($_REQUEST['sSearch'])) ? $_REQUEST['sSearch'] : false;
+/** Parse HTTP POST variables **/
+$http = eZHTTPTool::instance();
 
-$sortCol = (isset($_REQUEST['iSortCol_0'])) ? $_REQUEST['iSortCol_0'] : false;
-$sortDir = (isset($_REQUEST['sSortDir_0'])) ? $_REQUEST['sSortDir_0'] : false;
+/** Init template behaviors **/
+// $tpl = eZTemplate::factory();
+
+/** Access ini variables **/
+// $ini = eZINI::instance();
+// $iniOrderreport = eZINI::instance( 'ezporderreport.ini' );
+
+/**
+ * Default module view request parameters
+ */
+
+$http->getVariable('iDisplayStart');
+$offset = $http->getVariable('iDisplayStart');
+$limit = ( $http->getVariable('iDisplayLength') ) ? $http->getVariable('iDisplayLength') : 15;
+$sSearch = $http->getVariable('sSearch');
+
+$sortCol = $http->getVariable('iSortCol_0');
+$sortDir = $http->getVariable('sSortDir_0');
 
 if( $sortCol == 0 )
 {
@@ -35,35 +47,36 @@ if( $sortCol == 0 )
         $sortField = eZPreferences::value( 'admin_orderlist_sortfield' );
     }
 
-    if ( !isset( $sortField ) || ( ( $sortField != 'created' ) && ( $sortField!= 'user_name' ) ) )
+    if ( !isset( $sortField ) || ( ( $sortField != 'created' ) && ( $sortField != 'user_name' ) ) )
     {
         $sortField = 'created';
+        //$sortField = 'order_nr';
     }
 }
 else
 {
     switch( $sortCol )
     {
-        case 0:
-            $sortField = 'id';
-            break;
         case 1:
-            $sortField = 'user_name';
+            $sortField = 'order_nr';
             break;
         case 2:
-            $sortField = 'adgency';
-            break;
-        case 3:
-            $sortField = 'totalexvat';
+            $sortField = 'user_name';
             break;
         case 4:
+            $sortField = 'totalexvat';
+            break;
+        case 5:
             $sortField = 'totalinvvat';
             break;
-        case 5:
+        case 6:
             $sortField = 'created';
             break;
-        case 5:
+        case 7:
             $sortField = 'status';
+            break;
+        default:
+            $sortField = 'order_nr';
             break;
     }
 }
@@ -89,36 +102,40 @@ else
     }
 }
 
+// Archive options.
+if ( $http->hasPostVariable( 'ArchiveButton' ) )
+{
+    if ( $http->hasPostVariable( 'OrderIDArray' ) )
+    {
+        $orderIDArray = $http->postVariable( 'OrderIDArray' );
+        if ( $orderIDArray !== null )
+        {
+            $db = eZDB::instance();
+            $db->begin();
+            foreach ( $orderIDArray as $archiveID )
+            {
+                eZOrder::archiveOrder( $archiveID );
+            }
+            $db->commit();
+         }
+    }
+}
 
-
-/**
-* Default class instances
-*/
-
-/** Parse HTTP POST variables **/
-$http = eZHTTPTool::instance();
-
-/** Access system variables **/
-// $sys = eZSys::instance();
-
-/** Init template behaviors **/
-// $tpl = eZTemplate::factory();
-
-/** Access ini variables **/
-$ini = eZINI::instance();
-$iniOrderreport = eZINI::instance( 'ezporderreport.ini' );
-
-/** Report file variables **/
-$storageDirectory = eZSys::cacheDirectory();
-$contentTreeContentCsvReportName = 'ezporderreport';
-$contentTreeContentCsvReportFileName = $contentTreeContentCsvReportName;
-$contentTreeContentCsvReportFileNameWithExtension = $contentTreeContentCsvReportName . '.csv';
-$contentTreeContentCsvReportFileNameWithExtensionFullPath = $storageDirectory . '/' . $contentTreeContentCsvReportFileNameWithExtension;
-
-/** Default variables **/
-$siteNodeUrlHostname = $ini->variable( 'SiteSettings', 'SiteURL' );
-$adminSiteAccessName = $iniOrderreport->variable( 'eZPOrderReportSettings', 'AdminSiteAccessName' );
-$currentSiteAccessName = $GLOBALS['eZCurrentAccess']['name'];
+if ( $http->hasPostVariable( 'SaveOrderStatusButton' ) )
+{
+    if ( $http->hasPostVariable( 'StatusList' ) )
+    {
+        foreach ( $http->postVariable( 'StatusList' ) as $orderID => $statusID )
+        {
+            $order = eZOrder::fetch( $orderID );
+            $access = $order->canModifyStatus( $statusID );
+            if ( $access and $order->attribute( 'status_id' ) != $statusID )
+            {
+                $order->modifyStatus( $statusID );
+            }
+        }
+    }
+}
 
 
 /**
@@ -126,36 +143,50 @@ $currentSiteAccessName = $GLOBALS['eZCurrentAccess']['name'];
  */
 
 $ordersCount = eZOrder::activeCount();
-$ordersArray =  eZOrder::active( true, $offset, $limit, $sortField, $sortOrder );
+
+if( $http->getVariable( 'sSearch' ) )
+{
+    $ordersArray =  eZOrder::active( true, $offset, false, $sortField, $sortOrder );
+}
+else
+{
+    $ordersArray =  eZOrder::active( true, $offset, $limit, $sortField, $sortOrder );
+}
+
+$ordersArrayCount = count( $ordersArray );
+
 $orders = array();
+
+$locale = eZLocale::instance();
 
 foreach( $ordersArray as $orderItem )
 {
     $orderID = $orderItem->attribute( 'id' );
+    $orderNR = $orderItem->attribute( 'order_nr' );
+    $orderUser = $orderItem->user();
     $orderAccountName = $orderItem->attribute( 'account_name' );
 
-    $orderUser = $orderItem->user();
-    $orderUserContentObjectID = $orderUser->attribute( 'contentobject_id' );
-
-    $agencyContentObject = eZContentObject::fetch( $orderUserContentObjectID );
-    $agencyContentObjectDataMap = $agencyContentObject->dataMap();
-    $agencyContentObjectAttribute = $agencyContentObjectDataMap['agency'];
+    $orderUserContentObject = $orderUser->attribute( 'contentobject' );
+    $orderUserContentObjectID = $orderUserContentObject->attribute( 'id' );
+    $orderUserContentObjectDataMap = $orderUserContentObject->dataMap();
+    $orderUserContentObjectAttributeAgency = $orderUserContentObjectDataMap['agency'];
+    $orderUserContentObjectAttributeFirstNameContent = $orderUserContentObjectDataMap['first_name']->content();
+    $orderUserContentObjectAttributeLastNameContent = $orderUserContentObjectDataMap['last_name']->content();
+    $orderUserContentObjectAttributeEmailContent = $orderUserContentObjectDataMap['user_account']->content()->attribute( 'email' );
 
     if( $orderAccountName === null )
     {
         $orderAccountName = '(removed)';
     }
 
-    if( $agencyContentObjectAttribute->hasContent() )
+    if( $orderUserContentObjectAttributeAgency->hasContent() )
     {
-        $agency = $agencyContentObjectAttribute->content();
+        $agency = $orderUserContentObjectAttributeAgency->content();
     }
     else
     {
         $agency = 'n/a';
     }
-
-    $locale = eZLocale::instance();
 
     $orderTotalExVat = $orderItem->attribute( 'total_ex_vat' );
     $orderTotalIncVat = $orderItem->attribute( 'total_inc_vat' );
@@ -163,13 +194,9 @@ foreach( $ordersArray as $orderItem )
     $orderTotalExVatFormatted = $locale->formatCurrency( $orderTotalExVat, false );
     $orderTotalIncVatFormatted = $locale->formatCurrency( $orderTotalIncVat, false );
 
-/*
-    <td class="number" align="right">{$Orders.item.total_ex_vat|l10n( 'currency', $locale, $symbol )}</td>
-    <td class="number" align="right">{$Orders.item.total_inc_vat|l10n( 'currency', $locale, $symbol )}</td>
-*/
-
     $orderCreatedDateTime = $orderItem->attribute( 'created' );
     $orderCreatedDateTimeFormatted = $locale->formatShortTime( $orderCreatedDateTime );
+    //$orderCreatedDateTimeFormatted = $locale->formatDateTimeType( '%m/%d/%Y %h:%i %a', $orderCreatedDateTime );
 
     $orderStatusModificationList = $orderItem->attribute( 'status_modification_list' );
     $orderStatusID = $orderItem->attribute( 'status_id' );
@@ -182,28 +209,44 @@ foreach( $ordersArray as $orderItem )
         }
     }
 
-/*
-    <td>{$Orders.item.created|l10n( shortdatetime )}</td>
-    <td>
-    {let order_status_list=$Orders.status_modification_list}
+    $orderFormCustomerLink = '<a href="/shop/customerorderview/' . $orderUserContentObjectID . '/' . $orderUserContentObjectAttributeEmailContent . '">' . $orderAccountName . '</a>';
 
-    {section show=$order_status_list|count|gt( 0 )}
-        {set can_apply=true()}
-        <select name="StatusList[{$Orders.item.id}]">
-        {section var=Status loop=$order_status_list}
-            <option value="{$Status.item.status_id}"
-                {if eq( $Status.item.status_id, $Orders.item.status_id )}selected="selected"{/if}>
-                {$Status.item.name|wash}</option>
-        {/section}
-        </select>
-    {section-else}
-        {* Lets just show the name if we don't have access to change the status *}
-        {$Orders.status_name|wash}
-    {/section}
-*/
+    $orderFormOrderViewLink = '<a href="/shop/orderview/' . $orderNR . '">' . $orderNR .'</a>';
 
-    $orders[] = array( $orderID, $orderAccountName, $agency, $orderTotalExVatFormatted, $orderTotalIncVatFormatted, $orderCreatedDateTimeFormatted, $orderStatus );
+    $orderFormInputCheckbox = '<input class="no-sort" type="checkbox" name="OrderIDArray[]" value="' . $orderID . '" title="Select order for removal">';
+
+    $orderFormInputSelect = '<select name="'. "StatusList[" . $orderID . ']">';
+    foreach( $orderStatusModificationList as $statusItem )
+    {
+        $statusID = $statusItem->attribute( 'status_id' );
+        $statusSelected = $statusID == $orderStatusID ? "selected='selected'" : "";
+        $orderFormInputSelect .= '<option ' . $statusSelected . 'value="' . $statusID .'">' . $statusItem->attribute( 'name' ) . '</option>';
+    }
+    $orderFormInputSelect .= "</select>";
+
+    if( $http->getVariable( 'sSearch' ) )
+    {
+        $needle = strtolower( $http->getVariable( 'sSearch' ) );
+        $haystack = strtolower( $orderUserContentObjectAttributeFirstNameContent . ' ' . $orderUserContentObjectAttributeLastNameContent . ' ' . $agency . ' ' . $orderNR );
+
+        if( strpos( $haystack, $needle ) === false )
+        {
+            continue;
+        }
+    }
+
+    $orders[] = array( $orderFormInputCheckbox, $orderFormOrderViewLink, $orderFormCustomerLink, $agency, $orderTotalExVatFormatted, $orderTotalIncVatFormatted, $orderCreatedDateTimeFormatted, $orderStatus );
 }
+
+/**
+ * Prepare order report results
+ */
+
+$orderResults = array( 'sEcho' => (int) $_REQUEST['sEcho'],
+                       'iTotalRecords' => $ordersCount,
+                       'iTotalDisplayRecords' => $ordersCount,
+                       'aaDataCount' => count( $orders ),
+                       'aaData' => $orders );
 
 /**
  * Send order report data to client
@@ -211,11 +254,7 @@ foreach( $ordersArray as $orderItem )
 
 header( 'Content-Type: application/json' );
 
-echo json_encode( array( 'sEcho' => (int) $_REQUEST['sEcho'],
-                         'iTotalRecords' => $ordersCount,
-                         'iTotalDisplayRecords' => $ordersCount,
-                         'aaDataCount' => count( $orders ),
-                         'aaData' => $orders ) );
+echo json_encode( $orderResults );
 
 eZExecution::cleanExit();
 

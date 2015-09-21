@@ -109,6 +109,7 @@ table.display thead th div.DataTables_sort_wrapper span {
 
 .dataTables_wrapper {
 	position: relative;
+    top: 4px;
 	min-height: 302px;
 	_height: 302px;
 	clear: both;
@@ -130,12 +131,17 @@ table.display thead th div.DataTables_sort_wrapper span {
 .dataTables_length {
 	width: 40%;
 	float: left;
+	padding-bottom: 4px;
 }
 
 .dataTables_filter {
 	width: 50%;
 	float: right;
 	text-align: right;
+	padding-bottom: 4px;
+}
+.dataTables_filter label {
+    padding-right: 0em;
 }
 
 .dataTables_info {
@@ -146,6 +152,7 @@ table.display thead th div.DataTables_sort_wrapper span {
 .dataTables_paginate {
 	float: right;
 	text-align: right;
+	padding-top: 3px;
 }
 
 /* Pagination nested */
